@@ -6,7 +6,7 @@
 #include <stdio.h>
 #include <wchar.h>
 
-namespace Taste {
+namespace Four20 {
 
 class CodeGenerator
 {

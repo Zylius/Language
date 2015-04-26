@@ -1,7 +1,7 @@
 #include "SymbolTable.h"
 #include "Parser.h"
 
-namespace Taste {
+namespace Four20 {
 
 SymbolTable::SymbolTable(Parser *parser): undef(0), integer(1), boolean(2), var(0), proc(1), scope(2) {
 	errors = parser->errors;

@@ -1,0 +1,67 @@
+#include "SymbolTable.h"
+#include "CodeGenerator.h"
+#include "wchar.h"
+
+COMPILER Four20
+
+	SymbolTable   *tab;
+	CodeGenerator *gen;
+
+/*--------------------------------------------------------------------------*/
+CHARACTERS
+  letter = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz".
+  digit = "0123456789".
+  cr  = '\r'.
+  lf  = '\n'.
+  tab = '\t'.
+  CharInLine = ANY - '\r' - '\n'.
+  AnyButDoubleQuote = CharInLine - '\"'.
+
+TOKENS
+  idenToken = letter { letter | digit } .
+  character = '\'' letter | digit '\''.
+  number = digit {digit}.
+  variable = "#" letter { letter | digit | "_" }.
+  string = '"' {AnyButDoubleQuote} '"'.
+
+COMMENTS FROM "/*" TO "*/" NESTED
+COMMENTS FROM "//" TO cr lf
+
+IGNORE cr + lf + tab
+
+
+
+PRODUCTIONS
+factor = character | variable | string | number | identifier .
+/*------------------------------------------------------------------------*/
+identifier = idenToken .
+/*------------------------------------------------------------------------*/
+additationOperator = "+" | "-" .
+/*------------------------------------------------------------------------*/
+multiplyOperator = "*" | "/" .
+/*------------------------------------------------------------------------*/
+relationalOperator = "==" | "!=" | ">" | "<" .
+/*------------------------------------------------------------------------*/
+simpleExpression = additationOperator factor | multiplyOperator factor | relationalOperator factor .
+/*------------------------------------------------------------------------*/
+expression = factor { simpleExpression } .
+/*------------------------------------------------------------------------*/
+ifStatement = "jeigu" expression statement [ "kitaip" statement ] .
+/*------------------------------------------------------------------------*/
+statement = declaration | variable "=" expression ";" | ifStatement | forStatement | procedureStatement .
+/*------------------------------------------------------------------------*/
+Four20 = {define} { declaration } { procedureDeclaration } .
+/*------------------------------------------------------------------------*/
+typeSpecifier = ("char" | "string" | "int").
+/*------------------------------------------------------------------------*/
+declaration	 = typeSpecifier variable [ "=" expression ] ';'.
+/*------------------------------------------------------------------------*/
+procedureDeclaration = "procedura" identifier "(" {typeSpecifier variable } ")" "{" { statement } "}" .
+/*------------------------------------------------------------------------*/
+procedureStatement = identifier "(" { factor } ")" ";".
+/*------------------------------------------------------------------------*/
+forStatement = "nuo" variable [ "=" expression ] "iki" expression "daryti" statement statement .
+/*------------------------------------------------------------------------*/
+define = "#define" identifier factor .
+
+END Four20.

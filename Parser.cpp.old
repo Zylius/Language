@@ -216,7 +216,7 @@ void Parser::procedureStatement() {
 		Expect(17 /* ";" */);
 }
 
-void Parser::Four20() {
+void Parser::Taste() {
 		while (la->kind == 29 /* "#define" */) {
 			define();
 		}
@@ -356,7 +356,7 @@ void Parser::Parse() {
 	la = dummyToken = new Token();
 	la->val = coco_string_create(L"Dummy Token");
 	Get();
-	Four20();
+	Taste();
 	Expect(0);
 }
 

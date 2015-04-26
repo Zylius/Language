@@ -27,8 +27,8 @@ Coco/R itself) does not fall under the GNU General Public License.
 -----------------------------------------------------------------------*/
 
 
-#if !defined(Four20_COCO_PARSER_H__)
-#define Four20_COCO_PARSER_H__
+#if !defined(Taste_COCO_PARSER_H__)
+#define Taste_COCO_PARSER_H__
 
 #include "SymbolTable.h"
 #include "CodeGenerator.h"
@@ -105,7 +105,7 @@ SymbolTable   *tab;
 	void declaration();
 	void forStatement();
 	void procedureStatement();
-	void Four20();
+	void Taste();
 	void define();
 	void procedureDeclaration();
 	void typeSpecifier();

@@ -3,7 +3,7 @@
 
 #include "Scanner.h"
 
-namespace Taste {
+namespace Four20 {
 
 class Parser;
 class Errors;

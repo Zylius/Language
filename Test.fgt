@@ -1,0 +1,29 @@
+#define g 80
+
+procedura iftest(int #a)
+{
+	jeigu #a > g
+		#a = 1;	
+	kitaip
+		#a = 0;
+}
+
+procedura test()
+{
+	string #s;
+	jeigu #s == "420"
+		#s = "bbb";
+}
+
+procedura fortest(int #a) {
+	nuo #b = 10 iki #b < 1 daryti #b = #b + 1;
+		#a = #a + 1;
+}
+
+procedura pagrindine() {
+	int #a = 100;
+	string #b = "aaa";
+	iftest(#a);
+	fortest(10);
+	test();
+}

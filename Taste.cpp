@@ -7,16 +7,16 @@
 #include <sys/timeb.h>
 #include <wchar.h>
 
-using namespace Taste;
+using namespace Four20;
 
 int main (int argc, char *argv[]) {
 
 	if (argc == 2) {
 		wchar_t *fileName = coco_string_create(argv[1]);
-		Taste::Scanner *scanner = new Taste::Scanner(fileName);
-		Taste::Parser *parser = new Taste::Parser(scanner);
-		parser->tab = new Taste::SymbolTable(parser);
-		parser->gen = new Taste::CodeGenerator();
+		Four20::Scanner *scanner = new Four20::Scanner(fileName);
+		Four20::Parser *parser = new Four20::Parser(scanner);
+		parser->tab = new Four20::SymbolTable(parser);
+		parser->gen = new Four20::CodeGenerator();
 		parser->Parse();
 		if (parser->errors->count == 0) {
 			parser->gen->Decode();
