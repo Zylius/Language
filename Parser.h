@@ -85,7 +85,34 @@ public:
 
 SymbolTable   *tab;
 	CodeGenerator *gen;
+	
+	int // operators
+	  plus, minus, times, slash, equ, lss, gtr;
 
+	int // types
+	  undef, integer, boolean;
+
+	int // object kinds
+	  var, proc;
+
+	int // opcodes
+	  ADD,  SUB,   MUL,   DIV,   EQU,  LSS, GTR, NEG,
+	  LOAD, LOADG, STO,   STOG,  CONST,
+	  CALL, RET,   ENTER, LEAVE,
+	  JMP,  FJMP,  READ,  WRITE; 
+	
+	void InitDeclarations() { // it must exist
+		plus = 0; minus = 1; times = 2; slash = 3; equ = 4; lss = 5; gtr = 6; // operators
+		undef = 0; integer = 1; boolean = 2; // types
+		var = 0; proc = 1; // object kinds
+
+		// opcodes
+		ADD  =  0; SUB   =  1; MUL   =  2; DIV   =  3; EQU   =  4; LSS = 5; GTR = 6; NEG = 7;
+		LOAD =  8; LOADG =  9; STO   = 10; STOG  = 11; CONST = 12;
+		CALL = 13; RET   = 14; ENTER = 15; LEAVE = 16;
+		JMP  = 17; FJMP  = 18; READ  = 19; WRITE = 20;
+	}
+	
 /*--------------------------------------------------------------------------*/
 
 
@@ -94,7 +121,7 @@ SymbolTable   *tab;
 	void SemErr(const wchar_t* msg);
 
 	void factor();
-	void identifier();
+	void identifier(wchar_t* &name);
 	void additationOperator();
 	void multiplyOperator();
 	void relationalOperator();

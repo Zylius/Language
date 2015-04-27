@@ -90,6 +90,7 @@ bool Parser::WeakSeparator(int n, int syFol, int repFol) {
 }
 
 void Parser::factor() {
+		wchar_t* name; 
 		if (la->kind == _character) {
 			Get();
 		} else if (la->kind == _variable) {
@@ -99,12 +100,13 @@ void Parser::factor() {
 		} else if (la->kind == _number) {
 			Get();
 		} else if (la->kind == _idenToken) {
-			identifier();
+			identifier(name);
 		} else SynErr(31);
 }
 
-void Parser::identifier() {
+void Parser::identifier(wchar_t* &name) {
 		Expect(_idenToken);
+		name = coco_string_create(t->val); 
 }
 
 void Parser::additationOperator() {
@@ -207,7 +209,8 @@ void Parser::forStatement() {
 }
 
 void Parser::procedureStatement() {
-		identifier();
+		wchar_t* name; 
+		identifier(name);
 		Expect(22 /* "(" */);
 		while (StartOf(3)) {
 			factor();
@@ -217,6 +220,7 @@ void Parser::procedureStatement() {
 }
 
 void Parser::Four20() {
+		InitDeclarations(); tab->OpenScope(); 
 		while (la->kind == 29 /* "#define" */) {
 			define();
 		}
@@ -226,17 +230,21 @@ void Parser::Four20() {
 		while (la->kind == 21 /* "procedura" */) {
 			procedureDeclaration();
 		}
+		tab->CloseScope(); 
 }
 
 void Parser::define() {
+		wchar_t* name; 
 		Expect(29 /* "#define" */);
-		identifier();
+		identifier(name);
 		factor();
 }
 
 void Parser::procedureDeclaration() {
+		wchar_t* name; Obj *obj; 
 		Expect(21 /* "procedura" */);
-		identifier();
+		identifier(name);
+		obj = tab->NewObj(name, proc, undef); tab->OpenScope(); 
 		Expect(22 /* "(" */);
 		while (la->kind == 18 /* "char" */ || la->kind == 19 /* "string" */ || la->kind == 20 /* "int" */) {
 			typeSpecifier();
@@ -248,6 +256,7 @@ void Parser::procedureDeclaration() {
 			statement();
 		}
 		Expect(25 /* "}" */);
+		tab->CloseScope(); 
 }
 
 void Parser::typeSpecifier() {

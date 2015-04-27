@@ -18,6 +18,8 @@ public:
 	int level;		// nesting level; 0=global, 1=local
 	Obj *locals;		// scopes: to locally declared objects
 	int nextAdr;	// scopes: next free address in this scope
+	std::vector<Obj*> children;
+	Obj* parent;
 
 	Obj() {
 		name    = NULL;
@@ -50,6 +52,7 @@ public:
 	int curLevel;	// nesting level of current scope
 	Obj *undefObj;	// object node for erroneous symbols
 	Obj *topScope;	// topmost procedure scope
+
 
 	Errors *errors;
 

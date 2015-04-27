@@ -31,7 +31,7 @@ Coco/R itself) does not fall under the GNU General Public License.
 #include <string.h>
 #include "Scanner.h"
 
-namespace Taste {
+namespace Four20 {
 
 
 

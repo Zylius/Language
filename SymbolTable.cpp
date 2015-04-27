@@ -1,9 +1,11 @@
 #include "SymbolTable.h"
 #include "Parser.h"
+#include <vector>
 
 namespace Four20 {
 
 SymbolTable::SymbolTable(Parser *parser): undef(0), integer(1), boolean(2), var(0), proc(1), scope(2) {
+	parent = NULL;
 	errors = parser->errors;
 	topScope = NULL;
 	curLevel = -1;
@@ -23,6 +25,7 @@ void SymbolTable::OpenScope () {
 	scop->name = coco_string_create(""); scop->kind = scope;
 	scop->locals = NULL; scop->nextAdr = 0;
 	scop->next = topScope; topScope = scop;
+	
 	curLevel++;
 }
 
