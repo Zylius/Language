@@ -66,16 +66,18 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="..\CodeGenerator.h" />
     <ClInclude Include="..\Parser.h" />
     <ClInclude Include="..\Scanner.h" />
-    <ClInclude Include="..\SymbolTable.h" />
+    <ClInclude Include="..\ADT.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\ADT.cpp" />
     <ClCompile Include="..\Parser.cpp" />
     <ClCompile Include="..\Scanner.cpp" />
-    <ClCompile Include="..\SymbolTable.cpp" />
     <ClCompile Include="..\Taste.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\420.atg" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

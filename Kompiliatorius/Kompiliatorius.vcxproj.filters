@@ -18,13 +18,10 @@
     <ClInclude Include="..\Scanner.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\SymbolTable.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\CodeGenerator.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="..\Parser.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\ADT.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -35,11 +32,14 @@
     <ClCompile Include="..\Scanner.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\SymbolTable.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="..\Taste.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\ADT.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\420.atg" />
   </ItemGroup>
 </Project>

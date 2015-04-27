@@ -3,7 +3,7 @@
 procedura iftest(int #a)
 {
 	jeigu #a > g
-		#a = 1;	
+		#a = 1;
 	kitaip
 		#a = 0;
 }

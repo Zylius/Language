@@ -89,6 +89,11 @@ bool Parser::WeakSeparator(int n, int syFol, int repFol) {
 	}
 }
 
+void Parser::variableProd(wchar_t* &name) {
+		Expect(_variable);
+		name = coco_string_create(t->val); 
+}
+
 void Parser::factor() {
 		wchar_t* name; 
 		if (la->kind == _character) {
@@ -109,43 +114,52 @@ void Parser::identifier(wchar_t* &name) {
 		name = coco_string_create(t->val); 
 }
 
-void Parser::additationOperator() {
+void Parser::additationOperator(Operator &op) {
+		op = Operator::ADD; 
 		if (la->kind == 6 /* "+" */) {
 			Get();
 		} else if (la->kind == 7 /* "-" */) {
 			Get();
+			op = Operator::SUB; 
 		} else SynErr(32);
 }
 
-void Parser::multiplyOperator() {
+void Parser::multiplyOperator(Operator &op) {
+		op = Operator::MUL; 
 		if (la->kind == 8 /* "*" */) {
 			Get();
 		} else if (la->kind == 9 /* "/" */) {
 			Get();
+			op = Operator::DIV; 
 		} else SynErr(33);
 }
 
-void Parser::relationalOperator() {
+void Parser::relationalOperator(Operator &op) {
+		op = Operator::EQU; 
 		if (la->kind == 10 /* "==" */) {
 			Get();
 		} else if (la->kind == 11 /* "!=" */) {
 			Get();
+			op = Operator::NEQ; 
 		} else if (la->kind == 12 /* ">" */) {
 			Get();
+			op = Operator::LSS; 
 		} else if (la->kind == 13 /* "<" */) {
 			Get();
+			op = Operator::GTR; 
 		} else SynErr(34);
 }
 
 void Parser::simpleExpression() {
+		Operator op; 
 		if (la->kind == 6 /* "+" */ || la->kind == 7 /* "-" */) {
-			additationOperator();
+			additationOperator(op);
 			factor();
 		} else if (la->kind == 8 /* "*" */ || la->kind == 9 /* "/" */) {
-			multiplyOperator();
+			multiplyOperator(op);
 			factor();
 		} else if (StartOf(1)) {
-			relationalOperator();
+			relationalOperator(op);
 			factor();
 		} else SynErr(35);
 }
@@ -185,12 +199,14 @@ void Parser::statement() {
 }
 
 void Parser::declaration() {
-		typeSpecifier();
-		Expect(_variable);
+		wchar_t* name; Type type; 
+		typeSpecifier(type);
+		variableProd(name);
 		if (la->kind == 16 /* "=" */) {
 			Get();
 			expression();
 		}
+		curProc->add(new Var(name, type)); 
 		Expect(17 /* ";" */);
 }
 
@@ -220,7 +236,7 @@ void Parser::procedureStatement() {
 }
 
 void Parser::Four20() {
-		InitDeclarations(); tab->OpenScope(); 
+		curProc = new Procedure(L"Main", Type::UNDEF, NULL, this); 
 		while (la->kind == 29 /* "#define" */) {
 			define();
 		}
@@ -230,7 +246,6 @@ void Parser::Four20() {
 		while (la->kind == 21 /* "procedura" */) {
 			procedureDeclaration();
 		}
-		tab->CloseScope(); 
 }
 
 void Parser::define() {
@@ -241,14 +256,16 @@ void Parser::define() {
 }
 
 void Parser::procedureDeclaration() {
-		wchar_t* name; Obj *obj; 
+		wchar_t* name; wchar_t* varName; Type type;
 		Expect(21 /* "procedura" */);
 		identifier(name);
-		obj = tab->NewObj(name, proc, undef); tab->OpenScope(); 
+		Procedure* oldProc = curProc;
+		     curProc = new Procedure(name, Type::UNDEF, oldProc, this);
+		     oldProc->add(curProc); 
 		Expect(22 /* "(" */);
 		while (la->kind == 18 /* "char" */ || la->kind == 19 /* "string" */ || la->kind == 20 /* "int" */) {
-			typeSpecifier();
-			Expect(_variable);
+			typeSpecifier(type);
+			variableProd(varName);
 		}
 		Expect(23 /* ")" */);
 		Expect(24 /* "{" */);
@@ -256,16 +273,19 @@ void Parser::procedureDeclaration() {
 			statement();
 		}
 		Expect(25 /* "}" */);
-		tab->CloseScope(); 
+		curProc = oldProc; 
 }
 
-void Parser::typeSpecifier() {
+void Parser::typeSpecifier(Type &type) {
 		if (la->kind == 18 /* "char" */) {
+			type = Type::CHAR; 
 			Get();
 		} else if (la->kind == 19 /* "string" */) {
 			Get();
+			type = Type::STRING; 
 		} else if (la->kind == 20 /* "int" */) {
 			Get();
+			type = Type::INT; 
 		} else SynErr(37);
 }
 

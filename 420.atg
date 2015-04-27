@@ -1,38 +1,9 @@
-#include "SymbolTable.h"
-#include "CodeGenerator.h"
 #include "wchar.h"
+#include "ADT.h"
 
 COMPILER Four20
 
-	SymbolTable   *tab;
-	CodeGenerator *gen;
-	
-	int // operators
-	  plus, minus, times, slash, equ, lss, gtr;
-
-	int // types
-	  undef, integer, boolean;
-
-	int // object kinds
-	  var, proc;
-
-	int // opcodes
-	  ADD,  SUB,   MUL,   DIV,   EQU,  LSS, GTR, NEG,
-	  LOAD, LOADG, STO,   STOG,  CONST,
-	  CALL, RET,   ENTER, LEAVE,
-	  JMP,  FJMP,  READ,  WRITE; 
-	
-	void InitDeclarations() { // it must exist
-		plus = 0; minus = 1; times = 2; slash = 3; equ = 4; lss = 5; gtr = 6; // operators
-		undef = 0; integer = 1; boolean = 2; // types
-		var = 0; proc = 1; // object kinds
-
-		// opcodes
-		ADD  =  0; SUB   =  1; MUL   =  2; DIV   =  3; EQU   =  4; LSS = 5; GTR = 6; NEG = 7;
-		LOAD =  8; LOADG =  9; STO   = 10; STOG  = 11; CONST = 12;
-		CALL = 13; RET   = 14; ENTER = 15; LEAVE = 16;
-		JMP  = 17; FJMP  = 18; READ  = 19; WRITE = 20;
-	}
+	Procedure* curProc;
 	
 /*--------------------------------------------------------------------------*/
 CHARACTERS
@@ -59,18 +30,33 @@ IGNORE cr + lf + tab
 
 
 PRODUCTIONS
+/*------------------------------------------------------------------------*/
+variableProd<wchar_t* &name> = variable (. name = coco_string_create(t->val); .) .
+/*------------------------------------------------------------------------*/
 factor = (. wchar_t* name; .)
 (character | variable | string | number | identifier<name>) .
 /*------------------------------------------------------------------------*/
 identifier<wchar_t* &name> = idenToken (. name = coco_string_create(t->val); .) .
 /*------------------------------------------------------------------------*/
-additationOperator = "+" | "-" .
+additationOperator<Operator &op>=   (. op = Operator::ADD; .)
+ (	"+"								
+ | "-"								(. op = Operator::SUB; .)
+ ) .
 /*------------------------------------------------------------------------*/
-multiplyOperator = "*" | "/" .
+multiplyOperator<Operator &op> =    (. op = Operator::MUL; .)
+	( "*"							
+	| "/"							(. op = Operator::DIV; .)
+	) .
+/*-----------------------------------------------------------------------*/
+relationalOperator<Operator &op> =  (. op = Operator::EQU; .)
+( "=="
+| "!="								(. op = Operator::NEQ; .)
+| ">"								(. op = Operator::LSS; .)
+| "<"								(. op = Operator::GTR; .)
+).
 /*------------------------------------------------------------------------*/
-relationalOperator = "==" | "!=" | ">" | "<" .
-/*------------------------------------------------------------------------*/
-simpleExpression = additationOperator factor | multiplyOperator factor | relationalOperator factor .
+simpleExpression = (. Operator op; .)
+(additationOperator<op> factor | multiplyOperator<op> factor | relationalOperator<op> factor).
 /*------------------------------------------------------------------------*/
 expression = factor { simpleExpression } .
 /*------------------------------------------------------------------------*/
@@ -78,19 +64,35 @@ ifStatement = "jeigu" expression statement [ "kitaip" statement ] .
 /*------------------------------------------------------------------------*/
 statement = declaration | variable "=" expression ";" | ifStatement | forStatement | procedureStatement .
 /*------------------------------------------------------------------------*/
-Four20 = (. InitDeclarations(); tab->OpenScope(); .)
-{define} { declaration } { procedureDeclaration } 
-(. tab->CloseScope(); .).
+Four20 = 
+	( (. curProc = new Procedure(L"Main", Type::UNDEF, NULL, this); .)
+		{define}
+		{ declaration }
+		{ procedureDeclaration }
+	)
+.
 /*------------------------------------------------------------------------*/
-typeSpecifier = ("char" | "string" | "int").
+typeSpecifier<Type &type> 
+= (. type = Type::CHAR; .)
+	"char"
+	| "string"  (. type = Type::STRING; .)
+	| "int"		(. type = Type::INT; .)
+	.
 /*------------------------------------------------------------------------*/
-declaration	 = typeSpecifier variable [ "=" expression ] ';'.
+declaration
+= (. wchar_t* name; Type type; .)
+		typeSpecifier<type>
+		variableProd<name> [ "=" expression ] (. curProc->add(new Var(name, type)); .)
+';'
+	. 
 /*------------------------------------------------------------------------*/
-procedureDeclaration = (. wchar_t* name; Obj *obj; .)
+procedureDeclaration = (. wchar_t* name; wchar_t* varName; Type type;.)
 "procedura"
-identifier<name> (. obj = tab->NewObj(name, proc, undef); tab->OpenScope(); .)
-"(" {typeSpecifier variable } ")" "{" { statement } "}"
-(. tab->CloseScope(); .).
+identifier<name>		 (. Procedure* oldProc = curProc;
+                            curProc = new Procedure(name, Type::UNDEF, oldProc, this);
+                            oldProc->add(curProc); .)
+"(" {typeSpecifier<type> variableProd<varName> } ")" "{" { statement } "}"
+(. curProc = oldProc; .).
 /*------------------------------------------------------------------------*/
 procedureStatement = (. wchar_t* name; .)
 identifier<name> "(" { factor } ")" ";".
