@@ -89,24 +89,60 @@ bool Parser::WeakSeparator(int n, int syFol, int repFol) {
 	}
 }
 
+void Parser::characterProd(wchar_t* &value) {
+		Expect(_character);
+		value = coco_string_create(t->val); 
+}
+
+void Parser::stringProd(wchar_t* &value) {
+		Expect(_string);
+		value = coco_string_create(t->val); 
+}
+
+void Parser::numProd(wchar_t* &value) {
+		Expect(_number);
+		value = coco_string_create(t->val); 
+}
+
 void Parser::variableProd(wchar_t* &name) {
 		Expect(_variable);
 		name = coco_string_create(t->val); 
 }
 
-void Parser::factor() {
-		wchar_t* name; 
+void Parser::writeProd(Stat* &s) {
+		Expr* e; 
+		Expect(_write);
+		expression(e);
+		Expect(7 /* ";" */);
+		s = new Write(e); 
+}
+
+void Parser::expression(Expr* &expr) {
+		Operator op; Expr* e2; 
+		factor(expr);
+		while (StartOf(1)) {
+			simpleExpression(expr, op);
+		}
+}
+
+void Parser::factor(Expr* &e) {
+		wchar_t* name; wchar_t* value; 
 		if (la->kind == _character) {
-			Get();
+			characterProd(value);
+			e = new CharCon(value); 
 		} else if (la->kind == _variable) {
-			Get();
+			variableProd(name);
+			e = new VarCon(((Var*)curProc->find(name))); 
 		} else if (la->kind == _string) {
-			Get();
+			stringProd(value);
+			e = new StringCon(value); 
 		} else if (la->kind == _number) {
-			Get();
+			numProd(value);
+			e = new IntCon(value); 
 		} else if (la->kind == _idenToken) {
 			identifier(name);
-		} else SynErr(31);
+			e = new DefineCon(name); 
+		} else SynErr(32);
 }
 
 void Parser::identifier(wchar_t* &name) {
@@ -116,177 +152,202 @@ void Parser::identifier(wchar_t* &name) {
 
 void Parser::additationOperator(Operator &op) {
 		op = Operator::ADD; 
-		if (la->kind == 6 /* "+" */) {
+		if (la->kind == 8 /* "+" */) {
 			Get();
-		} else if (la->kind == 7 /* "-" */) {
+		} else if (la->kind == 9 /* "-" */) {
 			Get();
 			op = Operator::SUB; 
-		} else SynErr(32);
+		} else SynErr(33);
 }
 
 void Parser::multiplyOperator(Operator &op) {
 		op = Operator::MUL; 
-		if (la->kind == 8 /* "*" */) {
+		if (la->kind == 10 /* "*" */) {
 			Get();
-		} else if (la->kind == 9 /* "/" */) {
+		} else if (la->kind == 11 /* "/" */) {
 			Get();
 			op = Operator::DIV; 
-		} else SynErr(33);
+		} else SynErr(34);
 }
 
 void Parser::relationalOperator(Operator &op) {
 		op = Operator::EQU; 
-		if (la->kind == 10 /* "==" */) {
+		if (la->kind == 12 /* "==" */) {
 			Get();
-		} else if (la->kind == 11 /* "!=" */) {
+		} else if (la->kind == 13 /* "!=" */) {
 			Get();
 			op = Operator::NEQ; 
-		} else if (la->kind == 12 /* ">" */) {
+		} else if (la->kind == 14 /* ">" */) {
 			Get();
 			op = Operator::LSS; 
-		} else if (la->kind == 13 /* "<" */) {
+		} else if (la->kind == 15 /* "<" */) {
 			Get();
 			op = Operator::GTR; 
-		} else SynErr(34);
-}
-
-void Parser::simpleExpression() {
-		Operator op; 
-		if (la->kind == 6 /* "+" */ || la->kind == 7 /* "-" */) {
-			additationOperator(op);
-			factor();
-		} else if (la->kind == 8 /* "*" */ || la->kind == 9 /* "/" */) {
-			multiplyOperator(op);
-			factor();
-		} else if (StartOf(1)) {
-			relationalOperator(op);
-			factor();
 		} else SynErr(35);
 }
 
-void Parser::expression() {
-		factor();
-		while (StartOf(2)) {
-			simpleExpression();
-		}
-}
-
-void Parser::ifStatement() {
-		Expect(14 /* "jeigu" */);
-		expression();
-		statement();
-		if (la->kind == 15 /* "kitaip" */) {
-			Get();
-			statement();
-		}
-}
-
-void Parser::statement() {
-		if (la->kind == 18 /* "char" */ || la->kind == 19 /* "string" */ || la->kind == 20 /* "int" */) {
-			declaration();
-		} else if (la->kind == _variable) {
-			Get();
-			Expect(16 /* "=" */);
-			expression();
-			Expect(17 /* ";" */);
-		} else if (la->kind == 14 /* "jeigu" */) {
-			ifStatement();
-		} else if (la->kind == 26 /* "nuo" */) {
-			forStatement();
-		} else if (la->kind == _idenToken) {
-			procedureStatement();
+void Parser::simpleExpression(Expr* &expr, Operator &op) {
+		Expr* e2; 
+		if (la->kind == 8 /* "+" */ || la->kind == 9 /* "-" */) {
+			additationOperator(op);
+			factor(e2);
+			expr =  new BinExpr(expr, op, e2); 
+		} else if (la->kind == 10 /* "*" */ || la->kind == 11 /* "/" */) {
+			multiplyOperator(op);
+			factor(e2);
+			expr =  new BinExpr(expr, op, e2); 
+		} else if (StartOf(2)) {
+			relationalOperator(op);
+			factor(e2);
+			expr =  new BinExpr(expr, op, e2); 
 		} else SynErr(36);
 }
 
-void Parser::declaration() {
-		wchar_t* name; Type type; 
-		typeSpecifier(type);
-		variableProd(name);
-		if (la->kind == 16 /* "=" */) {
+void Parser::ifStatement(Stat* &stat) {
+		Expr* expr; Stat* stat2; 
+		Expect(16 /* "jeigu" */);
+		expression(expr);
+		statement(stat);
+		stat = new If(expr, stat); 
+		if (la->kind == 17 /* "kitaip" */) {
 			Get();
-			expression();
+			statement(stat2);
+			stat = new IfElse(stat, stat2); 
 		}
-		curProc->add(new Var(name, type)); 
-		Expect(17 /* ";" */);
 }
 
-void Parser::forStatement() {
-		Expect(26 /* "nuo" */);
-		Expect(_variable);
-		if (la->kind == 16 /* "=" */) {
-			Get();
-			expression();
-		}
-		Expect(27 /* "iki" */);
-		expression();
-		Expect(28 /* "daryti" */);
-		statement();
-		statement();
+void Parser::statement(Stat* &stat) {
+		Expr* expr; Stat* state2; wchar_t* name; 
+		if (la->kind == _variable) {
+			variableProd(name);
+			Expect(18 /* "=" */);
+			expression(expr);
+			Expect(7 /* ";" */);
+			stat = new Assignment(curProc->find(name), expr); 
+		} else if (la->kind == 16 /* "jeigu" */) {
+			ifStatement(stat);
+		} else if (la->kind == 27 /* "nuo" */) {
+			forStatement(stat);
+		} else if (la->kind == _idenToken) {
+			procedureStatement(stat);
+		} else if (la->kind == _write) {
+			writeProd(stat);
+		} else SynErr(37);
 }
 
-void Parser::procedureStatement() {
-		wchar_t* name; 
+void Parser::forStatement(Stat* &stat) {
+		wchar_t* name;  wchar_t* varName; Assignment* start = NULL; Expr* startExpr = NULL; Expr* toExpr; Stat* endStat; Stat* doStat; 
+		Expect(27 /* "nuo" */);
+		variableProd(varName);
+		curProc->add(new Var(varName, Type::INT)); 
+		if (la->kind == 18 /* "=" */) {
+			Get();
+			expression(startExpr);
+			start = new Assignment(curProc->find(varName), startExpr); 
+		}
+		Expect(28 /* "iki" */);
+		expression(toExpr);
+		Expect(29 /* "daryti" */);
+		statement(endStat);
+		statement(doStat);
+		stat = new For(start, toExpr, endStat, doStat); 
+}
+
+void Parser::procedureStatement(Stat* &stat) {
+		wchar_t* name;  
 		identifier(name);
-		Expect(22 /* "(" */);
+		stat = new Call(curProc->find(name));  
+		Expect(23 /* "(" */);
 		while (StartOf(3)) {
-			factor();
+			if (la->kind == _variable) {
+				variableProd(name);
+				((Call*)stat)->parameters.push_back(curProc->find(name)); 
+			} else if (la->kind == _number) {
+				numProd(name);
+				((Call*)stat)->parameters.push_back(new Var(name, Type::INT)); 
+			} else if (la->kind == _character) {
+				characterProd(name);
+				((Call*)stat)->parameters.push_back(new Var(name, Type::CHAR)); 
+			} else {
+				stringProd(name);
+				((Call*)stat)->parameters.push_back(new Var(name, Type::STRING)); 
+			}
 		}
-		Expect(23 /* ")" */);
-		Expect(17 /* ";" */);
+		Expect(24 /* ")" */);
+		Expect(7 /* ";" */);
 }
 
 void Parser::Four20() {
-		curProc = new Procedure(L"Main", Type::UNDEF, NULL, this); 
-		while (la->kind == 29 /* "#define" */) {
+		Stat* stat; curProc = new Procedure(L"Main", Type::UNDEF, NULL, this); 
+		while (la->kind == 30 /* "#define" */) {
 			define();
 		}
-		while (la->kind == 18 /* "char" */ || la->kind == 19 /* "string" */ || la->kind == 20 /* "int" */) {
+		while (la->kind == 19 /* "char" */ || la->kind == 20 /* "string" */ || la->kind == 21 /* "int" */) {
 			declaration();
 		}
-		while (la->kind == 21 /* "procedura" */) {
+		while (la->kind == 22 /* "procedura" */) {
 			procedureDeclaration();
 		}
 }
 
 void Parser::define() {
-		wchar_t* name; 
-		Expect(29 /* "#define" */);
+		wchar_t* name; Expr* expr; 
+		Expect(30 /* "#define" */);
 		identifier(name);
-		factor();
+		factor(expr);
+		curProc->add(new Var(name, Type::DEF)); Obj* obj = curProc->find(name);  curProc->addStat(new Assignment(obj, expr)); 
+}
+
+void Parser::declaration() {
+		wchar_t* name; Type type; Expr* expr;  
+		typeSpecifier(type);
+		variableProd(name);
+		curProc->add(new Var(name, type)); Obj* obj = curProc->find(name); 
+		if (la->kind == 18 /* "=" */) {
+			Get();
+			expression(expr);
+			curProc->addStat(new Assignment(obj, expr)); 
+		}
+		Expect(7 /* ";" */);
 }
 
 void Parser::procedureDeclaration() {
-		wchar_t* name; wchar_t* varName; Type type;
-		Expect(21 /* "procedura" */);
+		wchar_t* name; wchar_t* varName; Type type; Stat* state; 
+		Expect(22 /* "procedura" */);
 		identifier(name);
 		Procedure* oldProc = curProc;
 		     curProc = new Procedure(name, Type::UNDEF, oldProc, this);
 		     oldProc->add(curProc); 
-		Expect(22 /* "(" */);
-		while (la->kind == 18 /* "char" */ || la->kind == 19 /* "string" */ || la->kind == 20 /* "int" */) {
+		Expect(23 /* "(" */);
+		while (la->kind == 19 /* "char" */ || la->kind == 20 /* "string" */ || la->kind == 21 /* "int" */) {
 			typeSpecifier(type);
 			variableProd(varName);
+			curProc->add(new Var(varName, type)); 
 		}
-		Expect(23 /* ")" */);
-		Expect(24 /* "{" */);
+		Expect(24 /* ")" */);
+		Expect(25 /* "{" */);
+		while (la->kind == 19 /* "char" */ || la->kind == 20 /* "string" */ || la->kind == 21 /* "int" */) {
+			declaration();
+		}
 		while (StartOf(4)) {
-			statement();
+			statement(state);
+			curProc->addStat(state); 
 		}
-		Expect(25 /* "}" */);
+		Expect(26 /* "}" */);
 		curProc = oldProc; 
 }
 
 void Parser::typeSpecifier(Type &type) {
-		if (la->kind == 18 /* "char" */) {
+		if (la->kind == 19 /* "char" */) {
 			type = Type::CHAR; 
 			Get();
-		} else if (la->kind == 19 /* "string" */) {
+		} else if (la->kind == 20 /* "string" */) {
 			Get();
 			type = Type::STRING; 
-		} else if (la->kind == 20 /* "int" */) {
+		} else if (la->kind == 21 /* "int" */) {
 			Get();
 			type = Type::INT; 
-		} else SynErr(37);
+		} else SynErr(38);
 }
 
 
@@ -390,7 +451,7 @@ void Parser::Parse() {
 }
 
 Parser::Parser(Scanner *scanner) {
-	maxT = 30;
+	maxT = 31;
 
 	ParserInitCaller<Parser>::CallInit(this);
 	dummyToken = NULL;
@@ -405,12 +466,12 @@ bool Parser::StartOf(int s) {
 	const bool T = true;
 	const bool x = false;
 
-	static bool set[5][32] = {
-		{T,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x},
-		{x,x,x,x, x,x,x,x, x,x,T,T, T,T,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x},
-		{x,x,x,x, x,x,T,T, T,T,T,T, T,T,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x},
-		{x,T,T,T, T,T,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x},
-		{x,T,x,x, T,x,x,x, x,x,x,x, x,x,T,x, x,x,T,T, T,x,x,x, x,x,T,x, x,x,x,x}
+	static bool set[5][33] = {
+		{T,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x},
+		{x,x,x,x, x,x,x,x, T,T,T,T, T,T,T,T, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x},
+		{x,x,x,x, x,x,x,x, x,x,x,x, T,T,T,T, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x},
+		{x,x,T,T, T,T,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x},
+		{x,T,x,x, T,x,T,x, x,x,x,x, x,x,x,x, T,x,x,x, x,x,x,x, x,x,x,T, x,x,x,x, x}
 	};
 
 
@@ -437,38 +498,39 @@ void Errors::SynErr(int line, int col, int n) {
 			case 3: s = coco_string_create(L"number expected"); break;
 			case 4: s = coco_string_create(L"variable expected"); break;
 			case 5: s = coco_string_create(L"string expected"); break;
-			case 6: s = coco_string_create(L"\"+\" expected"); break;
-			case 7: s = coco_string_create(L"\"-\" expected"); break;
-			case 8: s = coco_string_create(L"\"*\" expected"); break;
-			case 9: s = coco_string_create(L"\"/\" expected"); break;
-			case 10: s = coco_string_create(L"\"==\" expected"); break;
-			case 11: s = coco_string_create(L"\"!=\" expected"); break;
-			case 12: s = coco_string_create(L"\">\" expected"); break;
-			case 13: s = coco_string_create(L"\"<\" expected"); break;
-			case 14: s = coco_string_create(L"\"jeigu\" expected"); break;
-			case 15: s = coco_string_create(L"\"kitaip\" expected"); break;
-			case 16: s = coco_string_create(L"\"=\" expected"); break;
-			case 17: s = coco_string_create(L"\";\" expected"); break;
-			case 18: s = coco_string_create(L"\"char\" expected"); break;
-			case 19: s = coco_string_create(L"\"string\" expected"); break;
-			case 20: s = coco_string_create(L"\"int\" expected"); break;
-			case 21: s = coco_string_create(L"\"procedura\" expected"); break;
-			case 22: s = coco_string_create(L"\"(\" expected"); break;
-			case 23: s = coco_string_create(L"\")\" expected"); break;
-			case 24: s = coco_string_create(L"\"{\" expected"); break;
-			case 25: s = coco_string_create(L"\"}\" expected"); break;
-			case 26: s = coco_string_create(L"\"nuo\" expected"); break;
-			case 27: s = coco_string_create(L"\"iki\" expected"); break;
-			case 28: s = coco_string_create(L"\"daryti\" expected"); break;
-			case 29: s = coco_string_create(L"\"#define\" expected"); break;
-			case 30: s = coco_string_create(L"??? expected"); break;
-			case 31: s = coco_string_create(L"invalid factor"); break;
-			case 32: s = coco_string_create(L"invalid additationOperator"); break;
-			case 33: s = coco_string_create(L"invalid multiplyOperator"); break;
-			case 34: s = coco_string_create(L"invalid relationalOperator"); break;
-			case 35: s = coco_string_create(L"invalid simpleExpression"); break;
-			case 36: s = coco_string_create(L"invalid statement"); break;
-			case 37: s = coco_string_create(L"invalid typeSpecifier"); break;
+			case 6: s = coco_string_create(L"write expected"); break;
+			case 7: s = coco_string_create(L"\";\" expected"); break;
+			case 8: s = coco_string_create(L"\"+\" expected"); break;
+			case 9: s = coco_string_create(L"\"-\" expected"); break;
+			case 10: s = coco_string_create(L"\"*\" expected"); break;
+			case 11: s = coco_string_create(L"\"/\" expected"); break;
+			case 12: s = coco_string_create(L"\"==\" expected"); break;
+			case 13: s = coco_string_create(L"\"!=\" expected"); break;
+			case 14: s = coco_string_create(L"\">\" expected"); break;
+			case 15: s = coco_string_create(L"\"<\" expected"); break;
+			case 16: s = coco_string_create(L"\"jeigu\" expected"); break;
+			case 17: s = coco_string_create(L"\"kitaip\" expected"); break;
+			case 18: s = coco_string_create(L"\"=\" expected"); break;
+			case 19: s = coco_string_create(L"\"char\" expected"); break;
+			case 20: s = coco_string_create(L"\"string\" expected"); break;
+			case 21: s = coco_string_create(L"\"int\" expected"); break;
+			case 22: s = coco_string_create(L"\"procedura\" expected"); break;
+			case 23: s = coco_string_create(L"\"(\" expected"); break;
+			case 24: s = coco_string_create(L"\")\" expected"); break;
+			case 25: s = coco_string_create(L"\"{\" expected"); break;
+			case 26: s = coco_string_create(L"\"}\" expected"); break;
+			case 27: s = coco_string_create(L"\"nuo\" expected"); break;
+			case 28: s = coco_string_create(L"\"iki\" expected"); break;
+			case 29: s = coco_string_create(L"\"daryti\" expected"); break;
+			case 30: s = coco_string_create(L"\"#define\" expected"); break;
+			case 31: s = coco_string_create(L"??? expected"); break;
+			case 32: s = coco_string_create(L"invalid factor"); break;
+			case 33: s = coco_string_create(L"invalid additationOperator"); break;
+			case 34: s = coco_string_create(L"invalid multiplyOperator"); break;
+			case 35: s = coco_string_create(L"invalid relationalOperator"); break;
+			case 36: s = coco_string_create(L"invalid simpleExpression"); break;
+			case 37: s = coco_string_create(L"invalid statement"); break;
+			case 38: s = coco_string_create(L"invalid typeSpecifier"); break;
 
 		default:
 		{

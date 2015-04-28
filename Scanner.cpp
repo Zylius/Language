@@ -449,8 +449,8 @@ Scanner::~Scanner() {
 void Scanner::Init() {
 	EOL    = '\n';
 	eofSym = 0;
-	maxT = 30;
-	noSym = 30;
+	maxT = 31;
+	noSym = 31;
 	int i;
 	for (i = 65; i <= 90; ++i) start.set(i, 1);
 	for (i = 97; i <= 122; ++i) start.set(i, 1);
@@ -458,30 +458,31 @@ void Scanner::Init() {
 	start.set(39, 2);
 	start.set(35, 5);
 	start.set(34, 7);
-	start.set(43, 10);
-	start.set(45, 11);
-	start.set(42, 12);
-	start.set(47, 13);
+	start.set(59, 10);
+	start.set(43, 11);
+	start.set(45, 12);
+	start.set(42, 13);
+	start.set(47, 14);
 	start.set(61, 24);
-	start.set(33, 15);
-	start.set(62, 17);
-	start.set(60, 18);
-	start.set(59, 19);
+	start.set(33, 16);
+	start.set(62, 18);
+	start.set(60, 19);
 	start.set(40, 20);
 	start.set(41, 21);
 	start.set(123, 22);
 	start.set(125, 23);
 		start.set(Buffer::EoF, -1);
-	keywords.set(L"jeigu", 14);
-	keywords.set(L"kitaip", 15);
-	keywords.set(L"char", 18);
-	keywords.set(L"string", 19);
-	keywords.set(L"int", 20);
-	keywords.set(L"procedura", 21);
-	keywords.set(L"nuo", 26);
-	keywords.set(L"iki", 27);
-	keywords.set(L"daryti", 28);
-	keywords.set(L"#define", 29);
+	keywords.set(L"write", 6);
+	keywords.set(L"jeigu", 16);
+	keywords.set(L"kitaip", 17);
+	keywords.set(L"char", 19);
+	keywords.set(L"string", 20);
+	keywords.set(L"int", 21);
+	keywords.set(L"procedura", 22);
+	keywords.set(L"nuo", 27);
+	keywords.set(L"iki", 28);
+	keywords.set(L"daryti", 29);
+	keywords.set(L"#define", 30);
 
 
 	tvalLength = 128;
@@ -704,40 +705,40 @@ Token* Scanner::NextToken() {
 			else if (ch == 39) {AddCh(); goto case_3;}
 			else {t->kind = 3; break;}
 		case 10:
-			{t->kind = 6; break;}
-		case 11:
 			{t->kind = 7; break;}
-		case 12:
+		case 11:
 			{t->kind = 8; break;}
-		case 13:
+		case 12:
 			{t->kind = 9; break;}
-		case 14:
-			case_14:
+		case 13:
 			{t->kind = 10; break;}
-		case 15:
-			if (ch == L'=') {AddCh(); goto case_16;}
-			else {goto case_0;}
-		case 16:
-			case_16:
+		case 14:
 			{t->kind = 11; break;}
-		case 17:
+		case 15:
+			case_15:
 			{t->kind = 12; break;}
-		case 18:
+		case 16:
+			if (ch == L'=') {AddCh(); goto case_17;}
+			else {goto case_0;}
+		case 17:
+			case_17:
 			{t->kind = 13; break;}
+		case 18:
+			{t->kind = 14; break;}
 		case 19:
-			{t->kind = 17; break;}
+			{t->kind = 15; break;}
 		case 20:
-			{t->kind = 22; break;}
-		case 21:
 			{t->kind = 23; break;}
-		case 22:
+		case 21:
 			{t->kind = 24; break;}
-		case 23:
+		case 22:
 			{t->kind = 25; break;}
+		case 23:
+			{t->kind = 26; break;}
 		case 24:
-			recEnd = pos; recKind = 16;
-			if (ch == L'=') {AddCh(); goto case_14;}
-			else {t->kind = 16; break;}
+			recEnd = pos; recKind = 18;
+			if (ch == L'=') {AddCh(); goto case_15;}
+			else {t->kind = 18; break;}
 
 	}
 	AppendVal(t);

@@ -1,0 +1,114 @@
+#include "wchar.h"
+#include "ADT.h"
+
+COMPILER Four20
+
+	Procedure* curProc;
+	
+/*--------------------------------------------------------------------------*/
+CHARACTERS
+  letter = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz".
+  digit = "0123456789".
+  cr  = '\r'.
+  lf  = '\n'.
+  tab = '\t'.
+  CharInLine = ANY - '\r' - '\n'.
+  AnyButDoubleQuote = CharInLine - '\"'.
+
+TOKENS
+  idenToken = letter { letter | digit } .
+  character = '\'' letter | digit '\''.
+  number = digit {digit}.
+  variable = "#" letter { letter | digit | "_" }.
+  string = '"' {AnyButDoubleQuote} '"'.
+
+COMMENTS FROM "/*" TO "*/" NESTED
+COMMENTS FROM "//" TO cr lf
+
+IGNORE cr + lf + tab
+
+
+
+PRODUCTIONS
+/*------------------------------------------------------------------------*/
+characterProd<wchar_t* &value> = character (. value = coco_string_create(t->val); .) .
+/*------------------------------------------------------------------------*/
+stringProd<wchar_t* &value> = string (. value = coco_string_create(t->val); .) .
+/*------------------------------------------------------------------------*/
+numProd<wchar_t* &value> = number (. value = coco_string_create(t->val); .) .
+/*------------------------------------------------------------------------*/
+variableProd<wchar_t* &name> = variable (. name = coco_string_create(t->val); .) .
+/*------------------------------------------------------------------------*/
+
+
+factor<wchar_t* &name, wchar_t* &value> = (. .)
+(characterProd<value> | variableProd<name> | stringProd<value> | numProd<value> | identifier<name>) .
+/*------------------------------------------------------------------------*/
+identifier<wchar_t* &name> = idenToken (. name = coco_string_create(t->val); .) .
+/*------------------------------------------------------------------------*/
+additationOperator<Operator &op>=   (. op = Operator::ADD; .)
+ (	"+"								
+ | "-"								(. op = Operator::SUB; .)
+ ) .
+/*------------------------------------------------------------------------*/
+multiplyOperator<Operator &op> =    (. op = Operator::MUL; .)
+	( "*"							
+	| "/"							(. op = Operator::DIV; .)
+	) .
+/*-----------------------------------------------------------------------*/
+relationalOperator<Operator &op> =  (. op = Operator::EQU; .)
+( "=="
+| "!="								(. op = Operator::NEQ; .)
+| ">"								(. op = Operator::LSS; .)
+| "<"								(. op = Operator::GTR; .)
+).
+/*------------------------------------------------------------------------*/
+simpleExpression<Expr &expr> = (. Operator op;  .)
+(additationOperator<op> factor | multiplyOperator<op> factor | relationalOperator<op> factor).
+/*------------------------------------------------------------------------*/
+expression = (. 
+factor { simpleExpression } .
+/*------------------------------------------------------------------------*/
+ifStatement = "jeigu" expression statement [ "kitaip" statement ] .
+/*------------------------------------------------------------------------*/
+statement = declaration | variable "=" expression ";" | ifStatement | forStatement | procedureStatement .
+/*------------------------------------------------------------------------*/
+Four20 = 
+	( (. curProc = new Procedure(L"Main", Type::UNDEF, NULL, this); .)
+		{define}
+		{ declaration }
+		{ procedureDeclaration }
+	)
+.
+/*------------------------------------------------------------------------*/
+typeSpecifier<Type &type> 
+= (. type = Type::CHAR; .)
+	"char"
+	| "string"  (. type = Type::STRING; .)
+	| "int"		(. type = Type::INT; .)
+	.
+/*------------------------------------------------------------------------*/
+declaration
+= (. wchar_t* name; Type type; .)
+		typeSpecifier<type>
+		variableProd<name> [ "=" expression ] (. curProc->add(new Var(name, type)); .)
+';'
+	. 
+/*------------------------------------------------------------------------*/
+procedureDeclaration = (. wchar_t* name; wchar_t* varName; Type type;.)
+"procedura"
+identifier<name>		 (. Procedure* oldProc = curProc;
+                            curProc = new Procedure(name, Type::UNDEF, oldProc, this);
+                            oldProc->add(curProc); .)
+"(" {typeSpecifier<type> variableProd<varName> } ")" "{" { statement } "}"
+(. curProc = oldProc; .).
+/*------------------------------------------------------------------------*/
+procedureStatement = (. wchar_t* name; .)
+identifier<name> "(" { factor } ")" ";".
+/*------------------------------------------------------------------------*/
+forStatement = "nuo" variable [ "=" expression ] "iki" expression "daryti" statement statement .
+/*------------------------------------------------------------------------*/
+define = (. wchar_t* name; .)
+"#define" identifier<name> factor .
+
+END Four20.

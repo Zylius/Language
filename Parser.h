@@ -60,7 +60,8 @@ private:
 		_character=2,
 		_number=3,
 		_variable=4,
-		_string=5
+		_string=5,
+		_write=6
 	};
 	int maxT;
 
@@ -91,21 +92,25 @@ Procedure* curProc;
 	~Parser();
 	void SemErr(const wchar_t* msg);
 
+	void characterProd(wchar_t* &value);
+	void stringProd(wchar_t* &value);
+	void numProd(wchar_t* &value);
 	void variableProd(wchar_t* &name);
-	void factor();
+	void writeProd(Stat* &s);
+	void expression(Expr* &expr);
+	void factor(Expr* &e);
 	void identifier(wchar_t* &name);
 	void additationOperator(Operator &op);
 	void multiplyOperator(Operator &op);
 	void relationalOperator(Operator &op);
-	void simpleExpression();
-	void expression();
-	void ifStatement();
-	void statement();
-	void declaration();
-	void forStatement();
-	void procedureStatement();
+	void simpleExpression(Expr* &expr, Operator &op);
+	void ifStatement(Stat* &stat);
+	void statement(Stat* &stat);
+	void forStatement(Stat* &stat);
+	void procedureStatement(Stat* &stat);
 	void Four20();
 	void define();
+	void declaration();
 	void procedureDeclaration();
 	void typeSpecifier(Type &type);
 

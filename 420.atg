@@ -21,6 +21,7 @@ TOKENS
   number = digit {digit}.
   variable = "#" letter { letter | digit | "_" }.
   string = '"' {AnyButDoubleQuote} '"'.
+  write = "write".
 
 COMMENTS FROM "/*" TO "*/" NESTED
 COMMENTS FROM "//" TO cr lf
@@ -31,10 +32,25 @@ IGNORE cr + lf + tab
 
 PRODUCTIONS
 /*------------------------------------------------------------------------*/
+characterProd<wchar_t* &value> = character (. value = coco_string_create(t->val); .) .
+/*------------------------------------------------------------------------*/
+stringProd<wchar_t* &value> = string (. value = coco_string_create(t->val); .) .
+/*------------------------------------------------------------------------*/
+numProd<wchar_t* &value> = number (. value = coco_string_create(t->val); .) .
+/*------------------------------------------------------------------------*/
 variableProd<wchar_t* &name> = variable (. name = coco_string_create(t->val); .) .
 /*------------------------------------------------------------------------*/
-factor = (. wchar_t* name; .)
-(character | variable | string | number | identifier<name>) .
+writeProd<Stat* &s> = (. Expr* e; .)
+write expression<e> ';'        (. s = new Write(e); .)
+.
+
+factor<Expr* &e> = (. wchar_t* name; wchar_t* value; .)
+  (  characterProd<value> (. e = new CharCon(value); .)
+   | variableProd<name> (. e = new VarCon(((Var*)curProc->find(name))); .)
+   | stringProd<value>	(. e = new StringCon(value); .)
+   | numProd<value>	(. e = new IntCon(value); .)
+   | identifier<name> (. e = new DefineCon(name); .)
+) .
 /*------------------------------------------------------------------------*/
 identifier<wchar_t* &name> = idenToken (. name = coco_string_create(t->val); .) .
 /*------------------------------------------------------------------------*/
@@ -55,19 +71,40 @@ relationalOperator<Operator &op> =  (. op = Operator::EQU; .)
 | "<"								(. op = Operator::GTR; .)
 ).
 /*------------------------------------------------------------------------*/
-simpleExpression = (. Operator op; .)
-(additationOperator<op> factor | multiplyOperator<op> factor | relationalOperator<op> factor).
+simpleExpression<Expr* &expr, Operator &op> = (. Expr* e2; .)
+	(additationOperator<op> factor<e2> (. expr =  new BinExpr(expr, op, e2); .)
+	| multiplyOperator<op> factor<e2>	(. expr =  new BinExpr(expr, op, e2); .)
+	| relationalOperator<op> factor<e2> (. expr =  new BinExpr(expr, op, e2); .)
+	).
 /*------------------------------------------------------------------------*/
-expression = factor { simpleExpression } .
+expression<Expr* &expr> = (. Operator op; Expr* e2; .) 
+	factor<expr>
+	{
+		simpleExpression<expr, op> 
+	} .
 /*------------------------------------------------------------------------*/
-ifStatement = "jeigu" expression statement [ "kitaip" statement ] .
+ifStatement<Stat* &stat> = (. Expr* expr; Stat* stat2; .)
+	(
+	"jeigu"
+	expression<expr>
+	statement<stat>			(. stat = new If(expr, stat); .)
+	[ 
+	"kitaip" statement<stat2>			(. stat = new IfElse(stat, stat2); .)
+	]
+	).
 /*------------------------------------------------------------------------*/
-statement = declaration | variable "=" expression ";" | ifStatement | forStatement | procedureStatement .
+statement<Stat* &stat> = (. Expr* expr; Stat* state2; wchar_t* name; .)
+	(variableProd<name> "=" expression<expr> ";" (. stat = new Assignment(curProc->find(name), expr); .)
+	| ifStatement<stat>
+	| forStatement<stat>
+	| procedureStatement<stat>
+	| writeProd<stat>
+	).
 /*------------------------------------------------------------------------*/
 Four20 = 
-	( (. curProc = new Procedure(L"Main", Type::UNDEF, NULL, this); .)
-		{define}
-		{ declaration }
+	( (. Stat* stat; curProc = new Procedure(L"Main", Type::UNDEF, NULL, this); .)
+		{ define } 
+		{ declaration } 
 		{ procedureDeclaration }
 	)
 .
@@ -80,26 +117,64 @@ typeSpecifier<Type &type>
 	.
 /*------------------------------------------------------------------------*/
 declaration
-= (. wchar_t* name; Type type; .)
+= (. wchar_t* name; Type type; Expr* expr;  .)
 		typeSpecifier<type>
-		variableProd<name> [ "=" expression ] (. curProc->add(new Var(name, type)); .)
+		variableProd<name> (. curProc->add(new Var(name, type)); Obj* obj = curProc->find(name); .)
+		[ 
+			"=" expression<expr> (. curProc->addStat(new Assignment(obj, expr)); .)
+		] 
 ';'
 	. 
 /*------------------------------------------------------------------------*/
-procedureDeclaration = (. wchar_t* name; wchar_t* varName; Type type;.)
+procedureDeclaration = (. wchar_t* name; wchar_t* varName; Type type; Stat* state; .)
 "procedura"
 identifier<name>		 (. Procedure* oldProc = curProc;
                             curProc = new Procedure(name, Type::UNDEF, oldProc, this);
                             oldProc->add(curProc); .)
-"(" {typeSpecifier<type> variableProd<varName> } ")" "{" { statement } "}"
-(. curProc = oldProc; .).
+	(
+	"(" 
+	{
+		typeSpecifier<type> variableProd<varName> (. curProc->add(new Var(varName, type)); .)
+	} 
+	")"
+	"{" 
+	{declaration }
+	{
+		
+		statement<state> (. curProc->addStat(state); .)
+	}
+	"}"
+	)(. curProc = oldProc; .).
 /*------------------------------------------------------------------------*/
-procedureStatement = (. wchar_t* name; .)
-identifier<name> "(" { factor } ")" ";".
+procedureStatement<Stat* &stat> = (. wchar_t* name;  .)
+identifier<name> (. stat = new Call(curProc->find(name));  .)
+("("
+{ 
+	variableProd<name> (. ((Call*)stat)->parameters.push_back(curProc->find(name)); .)
+	| numProd<name> (. ((Call*)stat)->parameters.push_back(new Var(name, Type::INT)); .)
+	| characterProd<name> (. ((Call*)stat)->parameters.push_back(new Var(name, Type::CHAR)); .)
+	| stringProd<name> (. ((Call*)stat)->parameters.push_back(new Var(name, Type::STRING)); .)
+}
+")"
+";"
+).
 /*------------------------------------------------------------------------*/
-forStatement = "nuo" variable [ "=" expression ] "iki" expression "daryti" statement statement .
+forStatement<Stat* &stat> = (. wchar_t* name;  wchar_t* varName; Assignment* start = NULL; Expr* startExpr = NULL; Expr* toExpr; Stat* endStat; Stat* doStat; .)
+	("nuo"
+	variableProd<varName> (. curProc->add(new Var(varName, Type::INT)); .)
+	[
+	"=" expression<startExpr> (. start = new Assignment(curProc->find(varName), startExpr); .)
+	] 
+	"iki"
+	expression<toExpr>
+	"daryti"
+	statement<endStat>
+	statement<doStat>
+	)(. stat = new For(start, toExpr, endStat, doStat); .)
+	. 
 /*------------------------------------------------------------------------*/
-define = (. wchar_t* name; .)
-"#define" identifier<name> factor .
+define = (. wchar_t* name; Expr* expr; .)
+"#define" identifier<name> factor<expr> (. curProc->add(new Var(name, Type::DEF)); Obj* obj = curProc->find(name);  curProc->addStat(new Assignment(obj, expr)); .)
+.
 
 END Four20.
