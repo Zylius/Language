@@ -1,0 +1,54 @@
+{* EBNF Grammar *}
+
+letter = "a" | "b" | "c" | "d" | "e" | "f" | "g" | "h" | "i" | "j" | "k" | "l" | "m" | "n" | "o" | "p" | "q" | "r" | "s" | "t" | "u" | "v" | "w" | "x" | "y" | "z" .
+
+digit = "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9" .
+
+character = letter | digit .
+
+sign = "+" | "-" .
+
+number = [A signA ] digitA {A digitA } .
+
+identifier = letter { letter | digit } .
+
+variable = "#", letter, { letter | digit | "_" } .
+
+string = "'" , character , { character } , "'" | '"' , character , { character } , '"' .
+
+type_specifier = "char" | "string" | "int" .
+
+addition-operator = "+" | "-" .
+
+multiplication-operator = "*" | "/" .
+
+relational-operator = "==" | "!=" | ">" | "<" .
+
+factor = character | variable | string | number | identifier .
+
+simple_expression = {A addition-operatorA factor } |
+					{A multiply-operator factor } |
+					{A relational-operator factor } .
+					
+expression = factor { simple_expression } .
+
+{* main feature *}
+
+define = "#define" identifier factor |
+ 	      "#define" identifier "(" { expression } ")" .
+		  
+{* statements *}
+
+declaration = type_specifier variable [ "=" expression ] ";" .
+
+statement = declaration | variable "=" expression ";" | If_statement  | for_statement.
+
+If_statement = "jeigu" expression statement [ "kitaip" statement ] .
+
+for_statementA = "nuo" variable [ "=" expression ] "iki" expression "daryti" statement statement .
+
+{* procedure *}
+
+procedure_declaration = "procedura" indentifier "(" {type_specifier variable } ")" "{" { statement } "}" .
+
+procedure_statement = indentifier "(" { factor } ")" ";".

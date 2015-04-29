@@ -1,0 +1,22 @@
+letter = "a" | "b" | "c" | "d" | "e" | "f" | "g" | "h" | "i" | "j" | "k" | "l" | "m" | "n" | "o" | "p" | "q" | "r" | "s" | "t" | "u" | "v" | "w" | "x" | "y" | "z" .
+digit = "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9" .
+ identifier = letter { letter | digit } .
+ characterProd = '\'' letter | digit '\''.
+ numProd = digit {digit}.
+ variableProd = "#" letter { letter | digit | "_" }.
+ stringProd = '"' {any} '"'.
+ writeProd = "write".
+ factor = characterProd | variableProd | stringProd | numProd| identifier .
+additationOperator = (“+”|”-”) .
+multiplyOperator = (“*”|”/”) .
+relationalOperator = (“==”|”!=”|”>”|”<”) .
+simpleExpression = (additationOperator factor | multiplyOperator factor | relationalOperator factor ) .
+expression = factor {simpleExpression} .
+ifStatement = (“jeigu” expression statement [“kitaip” statement]) .
+Statement = (variableProd | ifStatement | forStatement | procedureStatement | writeProd) .
+Four20 = { define } {declaration} {procedureDeclaration} .
+typeSpecifier = “char” | “string” | “int” .
+procedureDeclaration = “procedure“ identifier “(“ “ {typeSpecifier  variableProd} “)” “{“ { declaration } { statement } “}” .
+procedureStatement =  identifier “(“ {variableProd|numProd|characterProd|stringProd} “)” “;” .
+forStatement = “nuo” variableProd [ “=“expression ] “iki” expression “daryti” statement statement .
+define = “#define” identifier factor.
