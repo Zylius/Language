@@ -1,43 +1,17 @@
 #define g 80
 string #g = "50";
-int #b = 5 + 1 + 2 + 3 - 4;
+int #b = 5 + 1 + 2 + 3 - 6 * 4 / 3;
 procedura iftest(int #a)
 {
 	jeigu #a > g
 		#a = 1;
 	kitaip
 		#a = 0;
-	
-	jeigu 10 > g
-		jeigu #a > g
-			#a = 1;
-		kitaip
-			#a = 0;
-	kitaip
-		#b = 0;
-}
-
-procedura test()
-{
-	string #s;
-	jeigu #s == "420"
-		#s = "bbb";
-	write #s;
-}
-
-procedura fortest(int #a) {
-	nuo #b = 10 iki #b < 1 daryti #b = #b + 1;
-		#a = #a + 1;
-		
-	nuo #z = #a iki #z < 100 daryti #z = #z + 1;
-		#a = "test";
-
 }
 
 procedura pagrindine() {
-	int #a = 100;
-	string #b = "aaa";
-	iftest(#a);
-	fortest(10);
-	test();
+	int #a = 100 + 1 + 2 + 3 - 6 * 4 / 3;
+	
+	nuo #z = #a iki #z < 100 daryti #z = #z + 1;
+		#a = 3;
 }

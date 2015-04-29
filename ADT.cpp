@@ -45,17 +45,6 @@ namespace Four20
 		printf("PROC: %S\n", name);
 		indent++;
 
-		if (this->program == NULL) {
-			addLevels(); printf("DEFINITIOS: \n");
-			indent++;
-			for each (Obj* var in definitions)
-			{
-				var->dump();
-			}
-			indent--;
-		}
-
-
 		addLevels(); printf("STATEMENTS: \n");
 		indent++;
 		for each (Stat* var in statements)
